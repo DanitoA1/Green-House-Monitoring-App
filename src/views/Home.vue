@@ -1,6 +1,12 @@
 <template>
-  <div class="fixed p-4 md:px-20 h-full w-full">
-    <div class="my-8 flex justify-between items-center">
+  <div
+    class="fixed p-4 md:px-20 h-full w-full"
+    v-loading="loading"
+    element-loading-text="Loading..."
+    element-loading-spinner="el-icon-loading"
+    element-loading-background="rgba(0, 0, 0, 0.8)"
+  >
+    <div class="mt-8 mb-2 flex justify-between items-center">
       <div class="text-3xl md:text-4xl text-green-500 font-bold mr-10">
         Green House Monitoring
       </div>
@@ -19,7 +25,6 @@
       class="flex justify-between items-center text-blue-500 text-bold text-lg"
     >
       <div>
-        <p>Logged in as</p>
         <p>{{ currentUser }}</p>
       </div>
       <div>
@@ -41,21 +46,36 @@
       class="absolute top-1/2 left-1/2 transform -translate-y-1/2 -translate-x-1/2"
     >
       <div v-if="activeTab === 'Light'">
-        <LightRadar
-          :currentData="currentData"
-          :icon="'text-4xl text-gray-700 fas fa-lightbulb'"
-        />
+        <div v-if="loading">
+          <LightRadar :currentData="0" :icon="'text-4xl  fas fa-lightbulb'" />
+        </div>
+        <div v-else>
+          <LightRadar
+            :currentData="parseFloat((AllSensors[2] * 0.09765625).toFixed(1))"
+            :icon="'text-4xl fas fa-lightbulb'"
+            :Bulb="Bulb"
+            :handleOverride="handleOverride"
+          />
+        </div>
       </div>
       <div v-else-if="activeTab === 'Humidity'">
-        <HumidityRadar :currentData="currentData" />
+        <HumidityRadar
+          :currentData="parseFloat((AllSensors[12] * 0.09765625).toFixed(1))"
+        />
       </div>
       <div v-else-if="activeTab === 'Moisture Level'">
-        <MoistureRadar :currentData="currentData" />
+        <MoistureRadar
+          :currentData1="parseInt(AllSensors[4])"
+          :currentData2="parseInt(AllSensors[6])"
+          :currentData3="parseInt(AllSensors[8])"
+        />
       </div>
       <div v-else>
         <TemperatureRadar
-          :currentData="currentData"
-          :icon="'fas fa-fan text-4xl text-gray-700'"
+          :currentData="parseFloat((AllSensors[10] * 1).toFixed(1))"
+          :icon="'fas fa-fan text-4xl'"
+          :Fan="Fan"
+          :handleOverride="handleOverride"
         />
       </div>
     </div>
@@ -73,7 +93,7 @@ import MoistureRadar from "@/components/MoistureRadar";
 import TemperatureRadar from "@/components/TemperatureRadar";
 import Controls from "@/components/Controls";
 import { auth } from "../firebase";
-import { mapState } from 'vuex'
+import { mapState } from "vuex";
 
 export default {
   components: {
@@ -85,10 +105,9 @@ export default {
   },
   data() {
     return {
+      Fan: 0,
+      Bulb: 0,
       currentUser: null,
-      tempDialogue: false,
-      lightDialogue: false,
-      moistureDialogue: false,
       radarData: {
         lightCent: 40,
         humidityCent: 67,
@@ -98,51 +117,64 @@ export default {
       currentData: 40,
       activeTab: "Light",
       controlButton: [
-        { name: "Light", icon: "fal fa-sun", handler: this.handleLight },
+        { name: "Light", icon: "fal fa-sun", handler: this.handleSwitchTab },
         {
           name: "Humidity",
           icon: "fal fa-cloud-showers",
-          handler: this.handleLight,
+          handler: this.handleSwitchTab,
         },
         {
           name: "Moisture Level",
           icon: "fal fa-tint",
-          handler: this.handleLight,
+          handler: this.handleSwitchTab,
         },
         {
           name: "Temperature",
           icon: "fal fa-thermometer-full",
-          handler: this.handleLight,
+          handler: this.handleSwitchTab,
         },
       ],
     };
   },
-  created() {
+  async created() {
     this.currentUser = auth.currentUser.email;
-    // console.log(this.AllSensors);
+    await this.getData();
+   
   },
-  mounted() {
-    this.$store.dispatch("SETALLVALUES");
-
-  },
-  computed :{
-      ...mapState['AllSensors']
+  mounted() {},
+  computed: {
+    ...mapState(["AllSensors", "loading"]),
   },
 
   methods: {
+    getData() {
+      this.$store.dispatch("SETALLVALUES");
+    },
+
+    //Function To override Fan and Bulb
+    handleOverride(key) {
+      
+      if (key === "fan") {
+        this.Fan = !this.Fan;
+        
+        console.log("Fan :", this.Fan);
+      } else {
+        this.Bulb = !this.Bulb;
+        console.log("Bulb :", this.Bulb);
+      }
+      let data = {
+        Bulb : this.Bulb,
+        Fan : this.Fan
+      }
+      let newData = JSON.stringify(data).replace("{", " ").replace("}", " ");
+      return this.$store.dispatch("ACTIONOVERTAKER", newData)
+    },
+
     logOut() {
       this.$store.dispatch("LOGOUT");
     },
-    showLightModal() {
-      this.lightDialogue = true;
-    },
-    showTempModal() {
-      this.tempDialogue = true;
-    },
-    showMoistureModal() {
-      this.moistureDialogue = true;
-    },
-    handleLight(control) {
+
+    handleSwitchTab(control) {
       this.controlButton.filter((key) => {
         if (key.name === control) {
           this.activeTab = key.name;
@@ -173,13 +205,50 @@ export default {
   },
 };
 </script>
-
-<style>
-.el-dropdown-link {
-  cursor: pointer;
-  color: #409eff;
+<style scoped>
+.lds-ring {
+  display: inline-block;
+  position: relative;
+  width: 80px;
+  height: 80px;
 }
-.el-icon-arrow-down {
-  font-size: 12px;
+.lds-ring div {
+  box-sizing: border-box;
+  display: block;
+  position: absolute;
+  width: 30px;
+  height: 30px;
+  margin: 5px auto;
+  border: 5px solid #fff;
+  border-radius: 50%;
+  animation: lds-ring 1.2s cubic-bezier(0.5, 0, 0.5, 1) infinite;
+  border-color: #fff transparent transparent transparent;
+}
+.lds-ring div:nth-child(1) {
+  animation-delay: -0.45s;
+}
+.lds-ring div:nth-child(2) {
+  animation-delay: -0.3s;
+}
+.lds-ring div:nth-child(3) {
+  animation-delay: -0.15s;
+}
+@keyframes lds-ring {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+@media (max-width: 600px) {
+  body {
+    background-image: url(../assets/GreenHouseIImage.png);
+    background-attachment: fixed;
+    background-position: center;
+    background-repeat: no-repeat;
+    background-size: cover;
+    background-color: red;
+  }
 }
 </style>

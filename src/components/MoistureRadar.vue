@@ -1,11 +1,23 @@
 <template>
   <div class="w-full">
     <el-progress
-      v-for="(data, idx) in currentData"
       type="line"
-      :key="idx"
       :width="300"
-      :percentage="data"
+      :percentage="currentData1"
+      :color="customColors"
+      class="mb-5 w-72"
+    ></el-progress>
+    <el-progress
+      type="line"
+      :width="300"
+      :percentage="currentData2"
+      :color="customColors"
+      class="mb-5 w-72"
+    ></el-progress>
+    <el-progress
+      type="line"
+      :width="300"
+      :percentage="currentData3"
       :color="customColors"
       class="mb-5 w-72"
     ></el-progress>
@@ -24,7 +36,7 @@ export default {
       ],
     };
   },
-  props: ["currentData"],
+  props: ["currentData1", "currentData2", "currentData3"],
   methods: {},
 };
 </script>
