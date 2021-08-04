@@ -1,6 +1,6 @@
 <template>
   <div>
-    <p>Home Connected</p>
+    <p class="text-center">Home Connected</p>
   </div>
 </template>
 
