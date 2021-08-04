@@ -51,7 +51,7 @@ export default createStore({
     OVERRIDESETTINGS({}, data) {
       try {
         const starCountRef = firebase.database().ref("ControlValues/settings");
-        starCountRef.update(data, (error) => {
+        starCountRef.set(data, (error) => {
           if (error) {
             console.log('Override failed...');
           } else {
