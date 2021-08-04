@@ -49,7 +49,6 @@ export default createStore({
           form.password
         );
         alert("Welcome " + user.email);
-        console.log(user);
         router.push("/greenhouse");
       } catch (error) {
         alert(error.message);

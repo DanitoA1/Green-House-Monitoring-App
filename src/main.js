@@ -11,9 +11,9 @@ import { auth } from './firebase';
 
 const app = createApp(App);
 installElementPlus(app);
-auth.onAuthStateChanged((user) => {
+
   app
     .use(store)
     .use(router)
     .mount("#app");
-});
+

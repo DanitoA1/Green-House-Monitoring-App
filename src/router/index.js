@@ -35,11 +35,17 @@ const router = createRouter({
   routes,
 });
 
-router.beforeEach((to, from, next) => {
-  const requiresAuth = to.matched.some((x) => x.meta.requireAuth);
 
-  if (requiresAuth && !auth.currentUser) {
-    next("/");
+router.beforeEach((to, from, next) => {
+  if (to.matched.some(record => record.meta.requireAuth)) {
+    if (auth.currentUser) {
+      next();
+    } else {
+      alert('You must be logged in to see this page');
+      next({
+        path: '/',
+      });
+    }
   } else {
     next();
   }
